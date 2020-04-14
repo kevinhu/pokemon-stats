@@ -40,7 +40,7 @@ for(i in 1:n_pokemon){
   pokemon_name <- all_pokemon$name[i]
   pokemon_url <- all_pokemon$url[i]
   
-  pokemon <- fromJSON("https://pokeapi.co/api/v2/pokemon/1/")
+  pokemon <- fromJSON(pokemon_url)
   pokemon <- toJSON(pokemon)
   
   write(pokemon, paste("../data/raw/pokemons/",pokemon_name,".json",sep=""))
@@ -50,14 +50,14 @@ for(i in 1:n_pokemon){
 # Concatenate into master JSON
 
 ```{r}
-pokemons <- vector()
+pokemons <- vector(mode = "list", length=n_pokemon)
 
-for(i in 1:10){
+for(i in 1:n_pokemon){
   pokemon_name <- all_pokemon$name[i]
   pokemon <- fromJSON(paste("../data/raw/pokemons/",pokemon_name,".json",sep=""))
   
-  pokemons[pokemon_name] <- pokemon
+  pokemons[[i]] <- pokemon
 }
 
-write(pokemons, paste("../data/raw/pokemons.json",sep=""))
+write(toJSON(pokemons), paste("../data/raw/pokemons.json",sep=""))
 ```
