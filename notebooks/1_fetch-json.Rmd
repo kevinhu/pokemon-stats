@@ -1,0 +1,63 @@
+---
+title: "Fetch JSON"
+author: "Kevin Hu"
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 3
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_float:
+      collapsed: no
+  word_document: default
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r, setup, echo=FALSE}
+knitr::opts_chunk$set(error=TRUE, fig.height=8, fig.width=12, warning = F, message = F, cache = TRUE)
+```
+
+# Get list of all Pokemon
+
+```{r}
+library(jsonlite)
+
+all_pokemon <- fromJSON("https://pokeapi.co/api/v2/pokemon/?limit=1000&offset=0")
+all_pokemon <- all_pokemon$results
+
+write.csv(all_pokemon,"../data/raw/all_pokemon.csv")
+```
+
+# Download info for each Pokemon
+
+```{r}
+
+n_pokemon <- length(all_pokemon$name)
+
+for(i in 1:n_pokemon){
+  pokemon_name <- all_pokemon$name[i]
+  pokemon_url <- all_pokemon$url[i]
+  
+  pokemon <- fromJSON("https://pokeapi.co/api/v2/pokemon/1/")
+  pokemon <- toJSON(pokemon)
+  
+  write(pokemon, paste("../data/raw/pokemons/",pokemon_name,".json",sep=""))
+}
+```
+
+# Concatenate into master JSON
+
+```{r}
+pokemons <- vector()
+
+for(i in 1:10){
+  pokemon_name <- all_pokemon$name[i]
+  pokemon <- fromJSON(paste("../data/raw/pokemons/",pokemon_name,".json",sep=""))
+  
+  pokemons[pokemon_name] <- pokemon
+}
+
+write(pokemons, paste("../data/raw/pokemons.json",sep=""))
+```
