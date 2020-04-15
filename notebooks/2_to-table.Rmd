@@ -1,0 +1,83 @@
+---
+  title: "Convert JSON to table"
+author: "Kevin Hu"
+output:
+  pdf_document:
+  toc: yes
+toc_depth: 3
+html_document:
+  df_print: paged
+toc: yes
+toc_float:
+  collapsed: no
+word_document: default
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r, setup, echo=FALSE}
+knitr::opts_chunk$set(error=TRUE, fig.height=8, fig.width=12, warning = F, message = F, cache = TRUE)
+```
+
+# Load JSON
+
+```{r}
+library(jsonlite)
+
+pokemons <- fromJSON("../data/raw/pokemons.json")
+
+n_pokemon <- length(pokemons$base_experience)
+
+str(pokemons, max=1)
+```
+
+# Extract fields of interest
+
+```{r}
+
+get_type_primary <- function(types){
+  rownames(types) <- types$slot
+  return(types$type$name[1])
+}
+
+get_type_secondary <- function(types){
+  rownames(types) <- types$slot
+  return(types$type$name[2])
+}
+
+
+get_base_stat <- function(stats,stat_name){
+  rownames(stats)<-stats$stat$name
+  
+  return(stats[stat_name,"base_stat"])
+}
+
+get_stat_effort <- function(stats, stat_name){
+  rownames(stats)<-stats$stat$name
+  
+  return(stats[stat_name,"effort"])
+}
+
+pokemons_df <- data.frame(
+                          name = unlist(pokemons$name),
+                          base_experience = unlist(pokemons$base_experience),
+                          height = unlist(pokemons$height),
+                          weight = unlist(pokemons$weight),
+                          species = unlist(pokemons$species[,1]),
+                          type_primary = sapply(pokemons$types,get_type_primary),
+                          type_primary = sapply(pokemons$types,get_type_secondary)
+                          )
+
+stat_names <- c("speed","special-defense","special-attack","defense","attack","hp")
+
+for(stat_name in stat_names){
+  pokemons_df[paste(stat_name,"_base",sep="")] = sapply(pokemons$stats,get_base_stat,stat_name=stat_name)
+  pokemons_df[paste(stat_name,"_effort",sep="")] = sapply(pokemons$stats,get_stat_effort,stat_name=stat_name)
+}
+```
+
+# Export to CSV
+
+```{r}
+write.csv(pokemons_df,"../data/processed/pokemons.csv")
+```
