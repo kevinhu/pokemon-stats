@@ -65,7 +65,7 @@ pokemons_df <- data.frame(
                           weight = unlist(pokemons$weight),
                           species = unlist(pokemons$species[,1]),
                           type_primary = sapply(pokemons$types,get_type_primary),
-                          type_primary = sapply(pokemons$types,get_type_secondary)
+                          type_secondary = sapply(pokemons$types,get_type_secondary)
                           )
 
 stat_names <- c("speed","special-defense","special-attack","defense","attack","hp")
@@ -74,6 +74,15 @@ for(stat_name in stat_names){
   pokemons_df[paste(stat_name,"_base",sep="")] = sapply(pokemons$stats,get_base_stat,stat_name=stat_name)
   pokemons_df[paste(stat_name,"_effort",sep="")] = sapply(pokemons$stats,get_stat_effort,stat_name=stat_name)
 }
+```
+
+# Add legendaries
+
+```{r}
+legendaries <-read.csv("../data/raw/legendaries.txt")$Name
+legendaries <- sapply(legendaries,tolower)
+
+pokemons_df$is_legendary <- pokemons_df$species %in% legendaries
 ```
 
 # Export to CSV
