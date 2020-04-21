@@ -20,78 +20,109 @@ knitr::opts_chunk$set(error=TRUE, fig.height=8, fig.width=12, warning = F, messa
 ```
 
 ```{r}
+library(GGally)
 library(ggplot2)
 library(RColorBrewer)
+require(plyr)
+
 ```
 
 # Load CSV
 
 ```{r}
 pokemons_df <- read.csv("../data/processed/pokemons.csv")
-pokemons_df
+pokemons_df$legendary <- mapvalues(pokemons_df$is_legendary, 
+          from=c(TRUE,FALSE), 
+          to=c("Legendary","Normal"))
+
+pokemons_df$log_height <- log10(pokemons_df$height)
+pokemons_df$log_weight <- log10(pokemons_df$weight)
+
+head(pokemons_df)
 ```
 
 # Stats by type
 
+```{r}
+plot_by_primary <- function(var,var_name){
+  colourCount = length(unique(pokemons_df$type_primary))
+  getPalette = colorRampPalette(brewer.pal(9, "Set3"))
+  
+  bymedian <- reorder(pokemons_df$type_primary, pokemons_df[,var], median)
+  
+  plt <- ggplot(pokemons_df, aes_string(x=bymedian, y=var, fill="type_primary")) + 
+    geom_violin(trim=FALSE)+
+    geom_boxplot(width=0.1, fill="white")+
+    labs(title=paste(var_name,"by primary type"),x="Primary species", y = var_name) +
+    scale_fill_manual(values = getPalette(colourCount)) +
+    theme_classic() + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position = "none")
+  
+  return(plt)
+}
+```
+
 ## Base experience
 
 ```{r}
-colourCount = length(unique(pokemons_df$type_primary))
-  getPalette = colorRampPalette(brewer.pal(9, "Set3"))
-  
-  ggplot(pokemons_df, aes(x=reorder(type_primary, base_experience, FUN = median), y=base_experience, fill=type_primary)) + 
-    geom_violin(trim=FALSE)+
-    geom_boxplot(width=0.1, fill="white")+
-    labs(title="Base experience by primary type",x="Primary species", y = "Base experience") +
-    scale_fill_manual(values = getPalette(colourCount)) +
-    theme_classic() + 
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+plot_by_primary("base_experience","Base experience")
 ```
 
 ## Height
 ```{r}
-colourCount = length(unique(pokemons_df$type_primary))
-  getPalette = colorRampPalette(brewer.pal(9, "Set3"))
-  
-  ggplot(pokemons_df, aes(x=reorder(type_primary, height, FUN = median), y=height, fill=type_primary)) + 
-    geom_violin(trim=FALSE)+
-    geom_boxplot(width=0.1, fill="white")+
-    labs(title="Height by primary type",x="Primary type", y = "Height (dm)") +
-    scale_fill_manual(values = getPalette(colourCount)) +
-    theme_classic() + 
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+plt <- plot_by_primary("height","Height")
+plt + scale_y_continuous(trans='log10')
 ```
 
 ## Weight
 
 ```{r}
-colourCount = length(unique(pokemons_df$type_primary))
-getPalette = colorRampPalette(brewer.pal(9, "Set3"))
+plt <- plot_by_primary("weight","Weight")
+plt + scale_y_continuous(trans='log10')
+```
 
-ggplot(pokemons_df, aes(x=reorder(type_primary, weight, FUN = median), y=weight, fill=type_primary)) + 
-  geom_violin(trim=FALSE)+
-  scale_y_continuous(trans='log10')+
-  geom_boxplot(width=0.1, fill="white")+
-  labs(title="Weight by primary type",x="Primary species", y = "Weight") +
-  scale_fill_manual(values = getPalette(colourCount)) +
-  theme_classic() + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```{r}
+plot_by_primary("speed_base","Speed")
+```
+
+```{r}
+plot_by_primary("defense_base","Defense")
+```
+
+```{r}
+plot_by_primary("attack_base","Attack")
+```
+
+```{r}
+plot_by_primary("hp_base","HP")
+```
+
+# Correlations between everything
+
+```{r}
+corrs <- ggpairs(pokemons_df, mapping = aes(color = legendary), 
+                      columns = c("base_experience","log_height","log_weight","speed_base","defense_base","attack_base","hp_base"), 
+                      columnLabels = c("Base experience","Height (log10)","Weight (log10)","Speed","Defense","Attack","HP"),
+                 method="spearman"
+                 )
+
+corrs <- corrs + theme_minimal()
+corrs
 ```
 
 # Attack vs defense
 
 ```{r}
-ggplot(pokemons_df, aes(x = defense_base, y = attack_base, color=is_legendary))+
+ggplot(pokemons_df, aes(x = log_height, y = log_weight, color=legendary))+
   geom_point() +
   theme_classic()
 ```
 
 ```{r}
-par(mfrow=c(2,3))
+par(mfrow=c(2,4))
 
 qqnorm(pokemons_df$height, pch = 1, frame = FALSE,main="Height")
 qqline(pokemons_df$height, col = "steelblue", lwd = 2)
-
 
 qqnorm(pokemons_df$weight, pch = 1, frame = FALSE,main="Weight")
 qqline(pokemons_df$weight, col = "steelblue", lwd = 2)
@@ -101,6 +132,12 @@ qqline(pokemons_df$speed_base, col = "steelblue", lwd = 2)
 
 qqnorm(pokemons_df$defense_base, pch = 1, frame = FALSE,main="Defense")
 qqline(pokemons_df$defense_base, col = "steelblue", lwd = 2)
+
+qqnorm(pokemons_df$log_height, pch = 1, frame = FALSE,main="Height (log10)")
+qqline(pokemons_df$log_height, col = "steelblue", lwd = 2)
+
+qqnorm(pokemons_df$log_weight, pch = 1, frame = FALSE,main="Weight (log10)")
+qqline(pokemons_df$log_weight, col = "steelblue", lwd = 2)
 
 qqnorm(pokemons_df$attack_base, pch = 1, frame = FALSE,main="Attack")
 qqline(pokemons_df$attack_base, col = "steelblue", lwd = 2)
