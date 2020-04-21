@@ -1,0 +1,70 @@
+---
+  title: "Regression"
+author: "Kevin Hu"
+output:
+  pdf_document:
+  toc: yes
+toc_depth: 3
+html_document:
+  df_print: paged
+toc: yes
+toc_float:
+  collapsed: no
+word_document: default
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r, setup, echo=FALSE}
+knitr::opts_chunk$set(error=TRUE, fig.height=8, fig.width=12, warning = F, message = F, cache = TRUE)
+```
+
+```{r}
+library(ggplot2)
+```
+
+```{r}
+pokemons_df <- read.csv("../data/processed/pokemons.csv")
+pokemons_df$legendary <- mapvalues(pokemons_df$is_legendary, 
+          from=c(TRUE,FALSE), 
+          to=c("Legendary","Normal"))
+
+pokemons_df$log_height <- log10(pokemons_df$height)
+pokemons_df$log_weight <- log10(pokemons_df$weight)
+
+head(pokemons_df)
+```
+
+# Logistic regression for legendaries
+
+## Train-test split
+```{r}
+test_frac <- 0.33
+
+total_n <- length(pokemons_df[,1])
+test_n <- as.integer(total_n*test_frac)
+train_n <- total_n - test_n
+
+is_test <- c(rep(TRUE,each=test_n),rep(FALSE,each=train_n))
+is_test <- sample(is_test)
+
+train_pokemon <- pokemons_df[!is_test,]
+test_pokemon <- pokemons_df[is_test,]
+```
+
+## Fit model
+```{r}
+logit_mod <- glm(is_legendary ~ base_experience + height + weight + type_primary + speed_base + defense_base + attack_base + hp_base, 
+               data = train_pokemon, 
+               family = binomial)
+
+summary(logit_mod)
+
+predicted <- predict(logit_mod, test_pokemon, type="response")
+```
+
+```{r}
+library(pROC)
+plot(roc(test_pokemon$is_legendary, predicted, direction="<"),
+     col="black", lwd=3, main="ROC")
+```
