@@ -1,0 +1,101 @@
+---
+  title: "Regressions"
+author: "James Han & Kevin Hu"
+output:
+  pdf_document:
+  toc: yes
+toc_depth: 3
+html_document:
+  df_print: paged
+toc: yes
+toc_float:
+  collapsed: no
+word_document: default
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r, setup, echo=FALSE}
+knitr::opts_chunk$set(error=TRUE, fig.height=8, fig.width=12, warning = F, message = F, cache = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(RColorBrewer)
+```
+
+# Load CSV
+
+```{r}
+pokemons_df <- read.csv("../data/processed/pokemons.csv")
+pokemons_df
+```
+
+#Let's first take a look at Defense and Attack
+
+```{r}
+ggplot(pokemons_df, aes(x = defense_base, y = attack_base))+
+  geom_point() +
+  theme_classic()
+```
+
+```{r}
+corr <- cor(pokemons_df$defense_base, pokemons_df$attack_base)
+corr
+```
+
+## How significant is this, though? Let's bootstrap
+
+```{r}
+n <- 1000
+corr_bs <- rep(0, n)
+for (i in 1:n){
+  defense_sample <- sample(pokemons_df$defense_base, length(pokemons_df$defense_base), replace = T)
+  attack_sample <- sample(pokemons_df$attack_base, length(pokemons_df$attack_base), replace = T)
+  corr_bs[i] <- cor(defense_sample, attack_sample)
+}
+```
+
+```{r}
+plot(hist(corr_bs), xlim=c(-1,1))
+abline(v = corr)
+```
+
+# Let's also take a look at the correlation between weight and height
+
+```{r}
+ggplot(pokemons_df, aes(x = weight, y = height))+
+  geom_point() +
+  theme_classic()
+```
+
+```{r}
+corr <- cor(pokemons_df$weight, pokemons_df$height)
+corr
+```
+
+## How significant is this, though? Let's bootstrap
+
+```{r}
+n <- 1000
+corr_bs <- rep(0, n)
+for (i in 1:n){
+  weight_sample <- sample(pokemons_df$weight, length(pokemons_df$weight), replace = T)
+  height_sample <- sample(pokemons_df$height, length(pokemons_df$height), replace = T)
+  corr_bs[i] <- cor(weight_sample, height_sample)
+}
+```
+
+```{r}
+plot(hist(corr_bs), xlim=c(-1,1))
+abline(v = corr)
+```
+
+
+
+
+
+
+
+
+

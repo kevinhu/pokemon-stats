@@ -1,0 +1,76 @@
+---
+  title: "Regressions"
+author: "James Han & Kevin Hu"
+output:
+  pdf_document:
+  toc: yes
+toc_depth: 3
+html_document:
+  df_print: paged
+toc: yes
+toc_float:
+  collapsed: no
+word_document: default
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r, setup, echo=FALSE}
+knitr::opts_chunk$set(error=TRUE, fig.height=8, fig.width=12, warning = F, message = F, cache = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(RColorBrewer)
+```
+
+# Load CSV
+
+```{r}
+pokemons_df <- read.csv("../data/processed/pokemons.csv")
+pokemons_df
+```
+
+# First, let's examine the impact of the other factors on base HP (hitpoints)
+
+## Naive Full Regression
+```{r}
+nfr_hp <- lm(hp_base ~ . -X -name -species, pokemons_df)
+```
+
+```{r}
+summary(nfr_hp)
+```
+
+From our naive regression, it seems that certain statistics (namely base experience, base speed, and weight) are significant coefficients. It also seems that we may drop the type factor.
+
+```{r}
+hp1 <- lm(hp_base ~ . -X -type_primary -type_secondary -name -species, pokemons_df)
+```
+
+```{r}
+summary(hp1)
+```
+
+## Finding an Optimal Model
+
+
+```{r}
+library(leaps)
+hp1 <- regsubsets(hp_base ~ . -X -name -type_primary -type_secondary -species, data = pokemons_df, nvmax = 15)
+hp1_sum <- summary(hp1)
+hp1_sum$which
+```
+
+```{r}
+which(hp1_sum$cp == max(hp1_sum$cp))
+```
+```{r}
+hp1_sum$aic <- length(pokemons_df$X) * log(hp1_sum$rss/length(pokemons_df$X)) + 2*15 
+hp1_sum$aic
+```
+
+
+
+
+
