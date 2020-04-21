@@ -1,0 +1,111 @@
+---
+  title: "Exploratory"
+author: "Kevin Hu"
+output:
+  pdf_document:
+  toc: yes
+toc_depth: 3
+html_document:
+  df_print: paged
+toc: yes
+toc_float:
+  collapsed: no
+word_document: default
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r, setup, echo=FALSE}
+knitr::opts_chunk$set(error=TRUE, fig.height=8, fig.width=12, warning = F, message = F, cache = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(RColorBrewer)
+```
+
+# Load CSV
+
+```{r}
+pokemons_df <- read.csv("../data/processed/pokemons.csv")
+pokemons_df
+```
+
+# Stats by type
+
+## Base experience
+
+```{r}
+colourCount = length(unique(pokemons_df$type_primary))
+  getPalette = colorRampPalette(brewer.pal(9, "Set3"))
+  
+  ggplot(pokemons_df, aes(x=reorder(type_primary, base_experience, FUN = median), y=base_experience, fill=type_primary)) + 
+    geom_violin(trim=FALSE)+
+    geom_boxplot(width=0.1, fill="white")+
+    labs(title="Base experience by primary type",x="Primary species", y = "Base experience") +
+    scale_fill_manual(values = getPalette(colourCount)) +
+    theme_classic() + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Height
+```{r}
+colourCount = length(unique(pokemons_df$type_primary))
+  getPalette = colorRampPalette(brewer.pal(9, "Set3"))
+  
+  ggplot(pokemons_df, aes(x=reorder(type_primary, height, FUN = median), y=height, fill=type_primary)) + 
+    geom_violin(trim=FALSE)+
+    geom_boxplot(width=0.1, fill="white")+
+    labs(title="Height by primary type",x="Primary type", y = "Height (dm)") +
+    scale_fill_manual(values = getPalette(colourCount)) +
+    theme_classic() + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Weight
+
+```{r}
+colourCount = length(unique(pokemons_df$type_primary))
+getPalette = colorRampPalette(brewer.pal(9, "Set3"))
+
+ggplot(pokemons_df, aes(x=reorder(type_primary, weight, FUN = median), y=weight, fill=type_primary)) + 
+  geom_violin(trim=FALSE)+
+  scale_y_continuous(trans='log10')+
+  geom_boxplot(width=0.1, fill="white")+
+  labs(title="Weight by primary type",x="Primary species", y = "Weight") +
+  scale_fill_manual(values = getPalette(colourCount)) +
+  theme_classic() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+# Attack vs defense
+
+```{r}
+ggplot(pokemons_df, aes(x = defense_base, y = attack_base, color=is_legendary))+
+  geom_point() +
+  theme_classic()
+```
+
+```{r}
+par(mfrow=c(2,3))
+
+qqnorm(pokemons_df$height, pch = 1, frame = FALSE,main="Height")
+qqline(pokemons_df$height, col = "steelblue", lwd = 2)
+
+
+qqnorm(pokemons_df$weight, pch = 1, frame = FALSE,main="Weight")
+qqline(pokemons_df$weight, col = "steelblue", lwd = 2)
+
+qqnorm(pokemons_df$speed_base, pch = 1, frame = FALSE,main="Speed")
+qqline(pokemons_df$speed_base, col = "steelblue", lwd = 2)
+
+qqnorm(pokemons_df$defense_base, pch = 1, frame = FALSE,main="Defense")
+qqline(pokemons_df$defense_base, col = "steelblue", lwd = 2)
+
+qqnorm(pokemons_df$attack_base, pch = 1, frame = FALSE,main="Attack")
+qqline(pokemons_df$attack_base, col = "steelblue", lwd = 2)
+
+qqnorm(pokemons_df$hp_base, pch = 1, frame = FALSE,main="HP")
+qqline(pokemons_df$hp_base, col = "steelblue", lwd = 2)
+
+```
