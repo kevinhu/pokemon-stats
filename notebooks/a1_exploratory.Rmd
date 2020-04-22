@@ -104,6 +104,26 @@ plot_by_primary("hp_base","HP")
 ggsave("../plots/hp_by_primary_type.pdf",scale=0.5)
 ```
 
+# Legendary occurrence by primary type
+
+```{r}
+
+bymedian <- reorder(pokemons_df$type_primary, pokemons_df$is_legendary, mean)
+order <- factor(pokemons_df$legendary,levels=c("Normal","Legendary"))
+
+ggplot(pokemons_df,aes(x = bymedian,fill = order)) + 
+    geom_bar(position = "fill",width=0.5) + 
+    scale_fill_manual(values=c("white", "#a8d8ea")) +
+    theme_classic() + 
+    ylim(0,1)+
+    scale_y_continuous(expand = c(0,0)) +
+    xlab("Primary type") +
+    ylab("Proportion legendary") + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position = "none")
+
+ggsave("../plots/legendary_by_type.pdf",scale=0.5)
+```
+
 # Bunch of boxplots
 
 ```{r}
