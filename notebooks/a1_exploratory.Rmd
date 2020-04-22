@@ -53,7 +53,7 @@ plot_by_primary <- function(var,var_name){
   plt <- ggplot(pokemons_df, aes_string(x=bymedian, y=var, fill="type_primary")) + 
     geom_violin(trim=FALSE)+
     geom_boxplot(width=0.1, fill="white")+
-    labs(title=paste(var_name,"by primary type"),x="Primary species", y = var_name) +
+    labs(title=paste(var_name,"by primary type"),x="Primary type", y = var_name) +
     scale_fill_manual(values = getPalette(colourCount)) +
     theme_classic() + 
     theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position = "none")
@@ -66,12 +66,14 @@ plot_by_primary <- function(var,var_name){
 
 ```{r}
 plot_by_primary("base_experience","Base experience")
+ggsave("../plots/base_experience_by_primary_type.pdf",scale=0.5)
 ```
 
 ## Height
 ```{r}
 plt <- plot_by_primary("height","Height")
 plt + scale_y_continuous(trans='log10')
+ggsave("../plots/height_by_primary_type.pdf",scale=0.5)
 ```
 
 ## Weight
@@ -79,22 +81,58 @@ plt + scale_y_continuous(trans='log10')
 ```{r}
 plt <- plot_by_primary("weight","Weight")
 plt + scale_y_continuous(trans='log10')
+ggsave("../plots/weight_by_primary_type.pdf",scale=0.5)
 ```
 
 ```{r}
 plot_by_primary("speed_base","Speed")
+ggsave("../plots/speed_by_primary_type.pdf",scale=0.5)
 ```
 
 ```{r}
 plot_by_primary("defense_base","Defense")
+ggsave("../plots/defense_by_primary_type.pdf",scale=0.5)
 ```
 
 ```{r}
 plot_by_primary("attack_base","Attack")
+ggsave("../plots/attack_by_primary_type.pdf",scale=0.5)
 ```
 
 ```{r}
 plot_by_primary("hp_base","HP")
+ggsave("../plots/hp_by_primary_type.pdf",scale=0.5)
+```
+
+# Bunch of boxplots
+
+```{r}
+
+library(gridExtra)
+
+p <- list()
+
+select_vars = c("log_height","log_weight", "base_experience","speed_base","defense_base","special.defense_base","attack_base","special.attack_base", "hp_base")
+select_names = c("Height (log10)","Weight (log10)", "Experience","Speed", "Defense","Defense (special)", "Attack","Attack (special)", "HP")
+
+order <- factor(pokemons_df$legendary,levels=c("Normal","Legendary"))
+
+for (i in 1:length(select_vars)) {
+  
+  var <- select_vars[i]
+  name <- select_names[i]
+  
+  p[[i]] <- ggplot(data=pokemons_df, aes_string(x=order, y=var)) +
+            geom_boxplot(aes(fill=order),notch=TRUE) + guides(fill=FALSE) + 
+            theme(axis.title.y = element_text(size=14)) +
+            xlab("") + ylab(name) + 
+            theme_classic() + 
+            scale_fill_manual(values=c("#eaeaea", "#a8d8ea"))
+}
+
+plots <- do.call(grid.arrange, c(p, ncol=3))
+
+ggsave("../plots/legendary_boxplots.pdf",plots,width=8,height=6)
 ```
 
 # Correlations between everything
@@ -107,18 +145,13 @@ corrs <- ggpairs(pokemons_df, mapping = aes(color = legendary),
                  )
 
 corrs <- corrs + theme_minimal()
-corrs
+ggsave("../plots/correlation_pairs.pdf",corrs,scale=0.5)
 ```
 
-# Attack vs defense
 
 ```{r}
-ggplot(pokemons_df, aes(x = log_height, y = log_weight, color=legendary))+
-  geom_point() +
-  theme_classic()
-```
+pdf('../plots/qqplots.pdf', width=10, height=5)
 
-```{r}
 par(mfrow=c(2,4))
 
 qqnorm(pokemons_df$height, pch = 1, frame = FALSE,main="Height")
@@ -145,4 +178,5 @@ qqline(pokemons_df$attack_base, col = "steelblue", lwd = 2)
 qqnorm(pokemons_df$hp_base, pch = 1, frame = FALSE,main="HP")
 qqline(pokemons_df$hp_base, col = "steelblue", lwd = 2)
 
+dev.off()
 ```
