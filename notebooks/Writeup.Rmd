@@ -99,7 +99,7 @@ qqline(pokemons_df$hp_base, col = "steelblue", lwd = 2)
 
 In general, a Pokemon's type determines its relative strength against another in battle. For instance, fire-type Pokemon tend to perform well against ice types, but are vulnerable to attacks by water types. Pokemon actually have up to two types, but for the purpose of this report, we will consider only the primary one.
 
-Here, we examine the distributions of various traits with respect to type, first by defining a helper function for generating the plots by each type. 
+Here, we examine the distributions of speed and defense (for brevity) with respect to type, first by defining a helper function for generating the plots by each type.
 
 ```{r}
 plot_by_primary <- function(var,var_name){
@@ -122,25 +122,6 @@ plot_by_primary <- function(var,var_name){
 }
 ```
 
-### Base experience
-
-```{r}
-plot_by_primary("base_experience","Base experience")
-```
-
-### Height
-```{r}
-plt <- plot_by_primary("height","Height")
-plt + scale_y_continuous(trans='log10')
-```
-
-### Weight
-
-```{r}
-plt <- plot_by_primary("weight","Weight")
-plt + scale_y_continuous(trans='log10')
-```
-
 ### Speed
 
 With regards to speed, we see some differences that we would expect by common sense - electric and flying types have the highest median speed, and rock, bug, and ground types have the lowest.
@@ -152,16 +133,6 @@ plot_by_primary("speed_base","Speed")
 The distributions of defense by primary type seem to have a few types with high medians, namely ground, steel, and rock.
 ```{r}
 plot_by_primary("defense_base","Defense")
-```
-
-### Base attack
-```{r}
-plot_by_primary("attack_base","Attack")
-```
-
-### Base health
-```{r}
-plot_by_primary("hp_base","HP")
 ```
 
 ### Proportions of legendary pokemon by type
@@ -354,3 +325,43 @@ hp1_sum$aic
 ```
 
 From Cp, BIC, and AIC, it would seem that the submodel with only one parameter (as base experience) is the optimal model.
+
+## Logistic regression for legendaries
+
+### Train-test split
+```{r}
+test_frac <- 0.33
+
+total_n <- length(pokemons_df[,1])
+test_n <- as.integer(total_n*test_frac)
+train_n <- total_n - test_n
+
+is_test <- c(rep(TRUE,each=test_n),rep(FALSE,each=train_n))
+is_test <- sample(is_test)
+
+train_pokemon <- pokemons_df[!is_test,]
+test_pokemon <- pokemons_df[is_test,]
+```
+
+### Fit model
+```{r}
+logit_mod <- glm(is_legendary ~ base_experience + 
+                   height + weight + speed_base + 
+                   defense_base + attack_base + hp_base, 
+               data = train_pokemon, 
+               family = binomial)
+
+summary(logit_mod)
+
+predicted <- predict(logit_mod, test_pokemon, type="response")
+```
+
+### ROC and precision-recall curve
+```{r}
+library(precrec)
+
+curves <- evalmod(scores = predicted, labels = test_pokemon$is_legendary)
+autoplot(curves)
+
+auc(curves)
+```

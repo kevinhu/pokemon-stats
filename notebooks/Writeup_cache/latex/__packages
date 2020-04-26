@@ -5,3 +5,5 @@ RColorBrewer
 plyr
 gridExtra
 leaps
+pROC
+precrec
