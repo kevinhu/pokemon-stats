@@ -3,12 +3,12 @@ title: "The Statistics of Pokemon"
 author: "null"
 date: "null"
 output:
+  pdf_document:
+    toc: yes
   html_document:
     toc: yes
     toc_float:
       collapsed: no
-  pdf_document:
-    toc: yes
   '': default
 editor_options:
   chunk_output_type: inline
@@ -16,7 +16,7 @@ editor_options:
 
 
 ```{r, setup, echo=FALSE}
-knitr::opts_chunk$set(error=TRUE, fig.height=8, fig.width=12, warning = F, message = F, cache = TRUE)
+knitr::opts_chunk$set(error=TRUE, fig.height=4, fig.width=6, warning = F, message = F, cache = TRUE)
 ```
 
 ```{r}
@@ -25,31 +25,30 @@ library(ggplot2)
 library(RColorBrewer)
 require(plyr)
 library(leaps)
-
 ```
 
 # Introduction
 Pokemon is an RPG (role-playing game) developed by GameFreak. The main video game series centers around the concept of “Pokemon Battles,” where titular Pokemon–fantastical creatures that display a wide range of characteristics–owned by “Pokemon Trainers” engage in turn-based battles until all Pokemon available to one side “faint.”
 As the franchise has developed, the range of Pokemon available in-game has expanded greatly. As of the current generation of Pokemon games, there are 807 canon Pokemon creatures, each with unique characteristics, which are outlined in a canonical Pokedex, present in the games and recorded in our API of choice. For our final project for S&DS361, we decided that this wealth of data may be interesting to analyze. In particular, with the rapid rise of Pokemon in popular culture, such analysis may be engaging for statisticians and non-statisticians alike.
 
-## The Data
+## The data
 Pokemon have a myriad of characteristics associated with them. Below are the most well-characterized traits, which we decided to focus on analyses on:
+
  * Type: Each Pokemon is a member of one or two Pokemon “types”, corresponding to elements or concepts (i.e. water, grass, ghost, normal). Each type is weak to certain types, and effective against other types, resulting in a rock-paper-scissors-like game dynamic.
  * Height: Each Pokemon has a height associated with it in the Pokedex.
  * Weight: Each Pokemon has a weight associated with it in the Pokedex.
  * Growth Rate: Each Pokemon has a growth rate associated with it.
  * Base Experience: When defeated, each Pokemon yields some amount of experience.
- * Base Stats: Pokemon have attack/defense indicators as well as other properties that determine their behavior in battle.
+ * Base Stats: Pokemon have attack/defense and health points (HP) indicators that determine their behavior in battle.
+ * Legendary status: a small number of Pokemon are *legendary*, which are unusually powerful and rare and associated with the lore.
 
 ## API
 To obtain these data, we made us of the PokeAPI, a free-to-use API containing information from all generations of the Pokemon games, complete with wrappers in numerous languages. However, an official R wrapper is not available, and while a wrapper package exists, we will make direct API calls to retrieve our data.
 
-# Acquisition of Data
-The downloading of the data was done through LoadJSON requests, which was then processed into a tabular format for subsequent analysis. 
-(If we don't fill 20 pages, lets put in the code for this)
+# Data acquisition
+The downloading of the data was done through LoadJSON requests from the PokeAPI. We first made a call which listed all the Pokemon in the database, after which we made a separate request for each Pokemon to obtain more detailed information. The JSON files provided by the API were then processed into a DataFrame for subsequent analyses. 
 
-
-# Visualization of Data
+# Visualization
 
 ## Load CSV
 
@@ -65,10 +64,16 @@ pokemons_df$log_weight <- log10(pokemons_df$weight)
 head(pokemons_df)
 ```
 
-## Type-Stratified Visualization
+## Type-stratified visualization
+
+In general, a Pokemon's type determines its relative strength against another in battle. For instance, fire-type Pokemon tend to perform well against ice types, but are vulnerable to attacks by water types. Pokemon actually have up to two types, but for the purpose of this report, we will consider only the primary one.
+
+Here, we examine the distributions of various traits with respect to type, first by defining a helper function for generating the plots by each type. 
 
 ```{r}
 plot_by_primary <- function(var,var_name){
+  
+  # make the plot by type
   colourCount = length(unique(pokemons_df$type_primary))
   getPalette = colorRampPalette(brewer.pal(9, "Set3"))
   
@@ -90,14 +95,12 @@ plot_by_primary <- function(var,var_name){
 
 ```{r}
 plot_by_primary("base_experience","Base experience")
-ggsave("../plots/base_experience_by_primary_type.pdf",scale=0.5)
 ```
 
 ### Height
 ```{r}
 plt <- plot_by_primary("height","Height")
 plt + scale_y_continuous(trans='log10')
-ggsave("../plots/height_by_primary_type.pdf",scale=0.5)
 ```
 
 ### Weight
@@ -105,35 +108,31 @@ ggsave("../plots/height_by_primary_type.pdf",scale=0.5)
 ```{r}
 plt <- plot_by_primary("weight","Weight")
 plt + scale_y_continuous(trans='log10')
-ggsave("../plots/weight_by_primary_type.pdf",scale=0.5)
 ```
 
 ### Speed
 ```{r}
 plot_by_primary("speed_base","Speed")
-ggsave("../plots/speed_by_primary_type.pdf",scale=0.5)
 ```
 
-### Base Defense
+### Base defense
 ```{r}
 plot_by_primary("defense_base","Defense")
-ggsave("../plots/defense_by_primary_type.pdf",scale=0.5)
 ```
 
-### Base Attack
+### Base attack
 ```{r}
 plot_by_primary("attack_base","Attack")
-ggsave("../plots/attack_by_primary_type.pdf",scale=0.5)
 ```
 
-
-### Base Health
+### Base health
 ```{r}
 plot_by_primary("hp_base","HP")
-ggsave("../plots/hp_by_primary_type.pdf",scale=0.5)
 ```
 
-### Proportion of Legendary Pokemon
+### Proportions of legendary pokemon by type
+
+Using the primary types, we can also take a preliminary look at the proportions of Pokemon within each type that are legendary, giving us a suggestion as to if type could be indicative of legendary status.
 
 ```{r}
 
@@ -149,14 +148,13 @@ ggplot(pokemons_df,aes(x = bymedian,fill = order)) +
     xlab("Primary type") +
     ylab("Proportion legendary") + 
     theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position = "none")
-
-ggsave("../plots/legendary_by_type.pdf",scale=0.5)
 ```
 
-## Comparison of Normal and Legendary Pokemon Statistics
+## Comparisons of mormal and legendary Pokemon statistics
+
+Legendary-type Pokemon are generally stronger than normal ones in battle. Here, we take a look at these differences in the performance indicators with respect to legendary status.
 
 ```{r}
-
 library(gridExtra)
 
 p <- list()
@@ -180,28 +178,11 @@ for (i in 1:length(select_vars)) {
 }
 
 plots <- do.call(grid.arrange, c(p, ncol=3))
-
-ggsave("../plots/legendary_boxplots.pdf",plots,width=8,height=6)
 ```
 
-## Correlations Between Characteristics
+## Q-Q plots of each characteristic
 
 ```{r}
-corrs <- ggpairs(pokemons_df, mapping = aes(color = legendary), 
-                      columns = c("base_experience","log_height","log_weight","speed_base","defense_base","attack_base","hp_base"), 
-                      columnLabels = c("Base experience","Height (log10)","Weight (log10)","Speed","Defense","Attack","HP"),
-                 method="spearman"
-                 )
-
-corrs <- corrs + theme_minimal()
-ggsave("../plots/correlation_pairs.pdf",corrs,scale=0.5)
-```
-
-## Q-Q Plots of each characteristic
-
-```{r}
-pdf('../plots/qqplots.pdf', width=10, height=5)
-
 par(mfrow=c(2,4))
 
 qqnorm(pokemons_df$height, pch = 1, frame = FALSE,main="Height")
@@ -227,16 +208,15 @@ qqline(pokemons_df$attack_base, col = "steelblue", lwd = 2)
 
 qqnorm(pokemons_df$hp_base, pch = 1, frame = FALSE,main="HP")
 qqline(pokemons_df$hp_base, col = "steelblue", lwd = 2)
-
-dev.off()
 ```
 
 
-# Statistical Analysis
-## Bootstrap Analysis
+# Statistical analysis
+
+## Bootstrap analysis
 To test the significance of the correlations between various traits, we embarked on bootstrap analysis of the correlations obtained between traits.
 
-### Defense and Attack
+### Defense and attack
 
 #### Plot
 
@@ -251,10 +231,10 @@ corr <- cor(pokemons_df$defense_base, pokemons_df$attack_base)
 corr
 ```
 
-#### Testing Significance with Bootstrap
+#### Testing significance with bootstrap
 
 ```{r}
-n <- 1000
+n <- 10000
 corr_bs <- rep(0, n)
 for (i in 1:n){
   defense_sample <- sample(pokemons_df$defense_base, length(pokemons_df$defense_base), replace = T)
@@ -272,8 +252,7 @@ mean(as.numeric(corr_bs > corr))
 ```
 From this result, we see that there is no density greater than the observed correlation in the null distribution.
 
-
-### Weight and Height
+### Height and weight
 
 #### Plot
 
@@ -288,10 +267,10 @@ corr <- cor(pokemons_df$weight, pokemons_df$height)
 corr
 ```
 
-#### Statistical Testing with Bootstrap
+#### Testing significance with bootstrap
 
 ```{r}
-n <- 1000
+n <- 10000
 corr_bs <- rep(0, n)
 for (i in 1:n){
   weight_sample <- sample(pokemons_df$weight, length(pokemons_df$weight), replace = T)
@@ -311,11 +290,10 @@ mean(as.numeric(corr_bs > corr))
 
 Again, there is no density above the observed correlation in the null distribution. Thus, we reject the null hypothesis that there is no correlation between weight and height.
 
+## Linear regression
+### Predicting base health
 
-## Linear Regression
-### Predicting Base Health
-
-### Naive Full Regression
+### Naive full regression
 ```{r}
 nfr_hp <- lm(hp_base ~ . -X -name -species, pokemons_df)
 ```
@@ -334,7 +312,7 @@ hp1 <- lm(hp_base ~ . -X -type_primary -type_secondary -name -species, pokemons_
 summary(hp1)
 ```
 
-### Finding an Optimal Model
+### Finding an optimal model
 ```{r}
 hp1 <- regsubsets(hp_base ~ . -X -name -type_primary -type_secondary -species, data = pokemons_df, nvmax = 15)
 hp1_sum <- summary(hp1)
@@ -352,9 +330,3 @@ hp1_sum$aic
 ```
 
 From Cp, BIC, and AIC, it would seem that the submodel with only one parameter (as base experience) is the optimal model.
-
-
-
-
-
-
