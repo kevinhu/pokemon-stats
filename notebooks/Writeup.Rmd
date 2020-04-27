@@ -301,6 +301,8 @@ It seems that principal component 1 contains most (over 99%) of the observed var
 
 
 ```{r}
+pokemons_df['PC1'] = pc1$x[,1]
+pokemons_df['PC2'] = pc1$x[,2]
 ggplot(data = pokemons_df, aes_string(x='PC1', y='PC2')) + 
     geom_point(aes(color = factor(type_primary))) + 
     guides(fill = guide_legend(ncol = 2)) + 
