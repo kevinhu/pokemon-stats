@@ -3,12 +3,12 @@ title: "The Statistics of Pokemon"
 author: "null"
 date: "null"
 output:
-  pdf_document:
-    toc: yes
   html_document:
     toc: yes
     toc_float:
       collapsed: no
+  pdf_document:
+    toc: yes
   '': default
 editor_options:
   chunk_output_type: inline
@@ -51,6 +51,7 @@ The downloading of the data was done through LoadJSON requests from the PokeAPI.
 # Visualization
 
 ## Load CSV
+We processed the JSON files returned by the API into a single DataFrame, where each row denotes a Pokemon and columns correspond to the various attributes.
 
 ```{r}
 pokemons_df <- read.csv("../data/processed/pokemons.csv")
@@ -65,6 +66,7 @@ head(pokemons_df)
 ```
 
 ## Q-Q plots of each characteristic
+
 To see examine the normality of each statistic, we used q-q plots to plot the theoretical normal quantiles against the sample quantiles. We see that most of the traits are more of less normally-distributed (and height and weight after a log-transformation). However, we also see that there is a skew towards Pokemon with hig hHP and defense.
 
 ```{r}
@@ -206,7 +208,7 @@ plots <- do.call(grid.arrange, c(p, ncol=3))
 # Statistical analysis
 
 ## Bootstrap analysis
-To test the significance of the correlations between various traits, we embarked on bootstrap analysis of the correlations obtained between traits.
+We would expect certain traits to be correlated with each other - for instance, stronger Pokemon tend to have a stronger defense and attack, and taller Pokemon tend to weigh more as well. Here we use boostrap tests to examine the significance of these correlations.
 
 ### Defense and attack
 
@@ -286,6 +288,8 @@ Again, we found no bootstrapped samples with a correlation above the observed co
 
 ## Linear regression: predicting base health
 
+Here, we used linear regression to predict the base HP of each Pokemon.
+
 ### Naive full regression
 ```{r}
 nfr_hp <- lm(hp_base ~ . -X -name -species, pokemons_df)
@@ -327,6 +331,8 @@ hp1_sum$aic
 From Cp, BIC, and AIC, it would seem that the submodel with only one parameter (as base experience) is the optimal model.
 
 ## Logistic regression for legendaries
+
+We saw before that legendary Pokemon tend to have high stats across all traits, suggesting that these combined could produce an accurate indicator of legendary status. Here, we train a logistic model with train-test splits, showing that we can reach a high accuracy of $AUROC>0.975$ on the test set.
 
 ### Train-test split
 ```{r}
