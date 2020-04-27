@@ -286,6 +286,31 @@ mean(as.numeric(corr_bs > corr))
 
 Again, we found no bootstrapped samples with a correlation above the observed correlation in the null distribution. Thus, we reject the null hypothesis that there is no correlation between weight and height.
 
+## Principal Component Analysis
+```{r}
+pca_df <- pokemons_df[,-c(1, 23, 24)]
+num_only <- unlist(lapply(pca_df, is.numeric))  
+pca_df <- pca_df[ , num_only]
+pc1 <- prcomp(pca_df)
+```
+
+```{r}
+summary(pc1)
+```
+It seems that principal component 1 contains most (over 99%) of the observed variance. 
+
+
+```{r}
+ggplot(data = pokemons_df, aes_string(x='PC1', y='PC2')) + 
+    geom_point(aes(color = factor(type_primary))) + 
+    guides(fill = guide_legend(ncol = 2)) + 
+    labs(title= 'Biplot for PCA Results') +
+    theme_classic() 
+  
+```
+
+From this biplot, it seems that there is no noticeable clustering of Pokemon based on primary type using the first two principal components. 
+
 ## Linear regression: predicting base health
 
 Here, we used linear regression to predict the base HP of each Pokemon.
@@ -371,3 +396,9 @@ autoplot(curves)
 
 auc(curves)
 ```
+
+Our logistic regression model seems to be fairly accurate in predicting whether Pokemon are legendary or not. 
+
+# Conclusion
+Our analysis of the PokeAPI is by no means exhaustive, and there are many other interesting analyses that can be performed. However, we hope that the analyses contained in this project provide some level of insight into the relationships between different Pokemon statistics. In our project, we used various techniques covered in class, beginning with data visualization with ggplot, generating null distributions with bootstrap, principal component analysis, linear regression, and finally logistic regression. 
+  It must be noted that these statistics are derived from the Pokemon games, and are thus not truly natural data, in a sense. Game developers chose the various characteristics of each Pokemon, in line with the Pokemon's appearance and lore. Even though these data are artificial, we feel that given Pokemon's popularity in recent years, as well as the plethora of data presented in the PokeAPI databased, such analyses are still worthwhile, and provide an opportunity to use data analysis techniques covered in S&DS 361 on a unique, interesting dataset.
