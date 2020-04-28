@@ -3,12 +3,12 @@ title: "The Statistics of Pokemon"
 author: "null"
 date: "null"
 output:
+  pdf_document:
+    toc: yes
   html_document:
     toc: yes
     toc_float:
       collapsed: no
-  pdf_document:
-    toc: yes
   '': default
 editor_options:
   chunk_output_type: inline
@@ -54,7 +54,7 @@ The downloading of the data was done through LoadJSON requests from the PokeAPI.
 We processed the JSON files returned by the API into a single DataFrame, where each row denotes a Pokemon and columns correspond to the various attributes.
 
 ```{r}
-pokemons_df <- read.csv("../data/processed/pokemons.csv")
+pokemons_df <- read.csv("../data/processed/pokemons.csv",stringsAsFactors=FALSE)
 pokemons_df$legendary <- mapvalues(pokemons_df$is_legendary, 
           from=c(TRUE,FALSE), 
           to=c("Legendary","Normal"))
@@ -252,14 +252,14 @@ From this result, we see that there were no bootstrapped samples with a correlat
 #### Plot
 
 ```{r}
-ggplot(pokemons_df, aes(x = weight, y = height))+
+ggplot(pokemons_df, aes(x = log_weight, y = log_height))+
   geom_point() +
   theme_classic() + 
-  labs(x="Weight", y = "Height")
+  labs(x="Weight (log10)", y = "Height (log10)")
 ```
 
 ```{r}
-corr <- cor(pokemons_df$weight, pokemons_df$height)
+corr <- cor(pokemons_df$log_weight, pokemons_df$log_height)
 corr
 ```
 
@@ -269,8 +269,8 @@ corr
 n <- 10000
 corr_bs <- rep(0, n)
 for (i in 1:n){
-  weight_sample <- sample(pokemons_df$weight, length(pokemons_df$weight), replace = T)
-  height_sample <- sample(pokemons_df$height, length(pokemons_df$height), replace = T)
+  weight_sample <- sample(pokemons_df$log_weight, length(pokemons_df$log_weight), replace = T)
+  height_sample <- sample(pokemons_df$log_height, length(pokemons_df$log_height), replace = T)
   corr_bs[i] <- cor(weight_sample, height_sample)
 }
 ```
@@ -288,7 +288,7 @@ Again, we found no bootstrapped samples with a correlation above the observed co
 
 ## Principal Component Analysis
 ```{r}
-pca_df <- pokemons_df[,-c(1, 23, 24)]
+pca_df <- pokemons_df[,-c(1,4,5)]
 num_only <- unlist(lapply(pca_df, is.numeric))  
 pca_df <- pca_df[ , num_only]
 pc1 <- prcomp(pca_df)
@@ -297,21 +297,53 @@ pc1 <- prcomp(pca_df)
 ```{r}
 summary(pc1)
 ```
-It seems that principal component 1 contains most (over 99%) of the observed variance. 
+It seems that principal component 1 contains most (about 72%) of the observed variance, after which the remaining components taper off.
 
+When we plot the first two components, we see that there is a clear clustering effect in the first component. Some of these clusters appear to be accounted for by legendary Pokemon, but the remaining ones appear to be backed by a different factor.
 
 ```{r}
 pokemons_df['PC1'] = pc1$x[,1]
 pokemons_df['PC2'] = pc1$x[,2]
 ggplot(data = pokemons_df, aes_string(x='PC1', y='PC2')) + 
-    geom_point(aes(color = factor(type_primary))) + 
+    geom_point(aes(color = legendary)) + 
     guides(fill = guide_legend(ncol = 2)) + 
     labs(title= 'Biplot for PCA Results') +
     theme_classic() 
   
 ```
 
-From this biplot, it seems that there is no noticeable clustering of Pokemon based on primary type using the first two principal components. 
+Pokemon have different levels of evolution - for instance, a Psyduck may evolve into a Golduck. The maximum number of evolutions is two, so we can assign each Pokemon three stages of evolution: basic (stage 0), stage 1, and stage 2. Evolution stages are not directly provided by the PokeAPI as part of Pokemon info, so we instead scraped the bulbapedia website (bulbapedia.bulbagarden.net).
+
+```{r}
+basic <- read.table("../data/raw/stages/basic.txt",header=FALSE,stringsAsFactors=FALSE)$V1
+stage_1 <- read.table("../data/raw/stages/stage_1.txt",header=FALSE,stringsAsFactors=FALSE)$V1
+stage_2 <- read.table("../data/raw/stages/stage_2.txt",header=FALSE,stringsAsFactors=FALSE)$V1
+
+stages <- data.frame(species=tolower(c(basic,stage_1,stage_2)))
+stages$stage <- c(rep("Stage 0 (basic)",length(basic)),
+                  rep("Stage 1",length(stage_1)),
+                  rep("Stage 2",length(stage_2))
+                  )
+
+stages <- stages[!duplicated(stages$species),]
+
+rownames(stages) <- stages$species
+
+pokemons_df$stage <- stages[pokemons_df$species,"stage"]
+```
+
+When colored by evolution stage, we see that many of these clusters are clearly distinguished by evolution stage. Moreover, because legendary Pokemon cannot evolve (with a handful of exceptions), these can be seen as outliers to the "basic" cluster.
+
+```{r}
+pokemons_df['PC1'] = pc1$x[,1]
+pokemons_df['PC2'] = pc1$x[,2]
+ggplot(data = pokemons_df, aes_string(x='PC1', y='PC2')) + 
+    geom_point(aes(color = stage)) + 
+    guides(fill = guide_legend(ncol = 2)) + 
+    labs(title= 'Biplot for PCA Results') +
+    theme_classic() 
+  
+```
 
 ## Linear regression: predicting base health
 
@@ -359,7 +391,7 @@ From Cp, BIC, and AIC, it would seem that the submodel with only one parameter (
 
 ## Logistic regression for legendaries
 
-We saw before that legendary Pokemon tend to have high stats across all traits, suggesting that these combined could produce an accurate indicator of legendary status. Here, we train a logistic model with train-test splits, showing that we can reach a high accuracy of $AUROC>0.975$ on the test set.
+We saw before that legendary Pokemon tend to have high stats across all traits, suggesting that these combined could produce an accurate indicator of legendary status. Here, we train a logistic model with train-test splits, showing that we can reach a high accuracy of $AUROC>0.95$ on the test set.
 
 ### Train-test split
 ```{r}

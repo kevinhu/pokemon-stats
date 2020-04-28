@@ -3,7 +3,6 @@ ggplot2
 GGally
 RColorBrewer
 plyr
-gridExtra
 leaps
-pROC
+gridExtra
 precrec
