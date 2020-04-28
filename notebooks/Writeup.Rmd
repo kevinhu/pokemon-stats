@@ -29,7 +29,7 @@ library(leaps)
 
 # Introduction
 Pokemon is an RPG (role-playing game) developed by GameFreak. The main video game series centers around the concept of “Pokemon Battles,” where titular Pokemon–fantastical creatures that display a wide range of characteristics–owned by “Pokemon Trainers” engage in turn-based battles until all Pokemon available to one side “faint.”
-As the franchise has developed, the range of Pokemon available in-game has expanded greatly. As of the current generation of Pokemon games, there are 807 canon Pokemon creatures, each with unique characteristics, which are outlined in a canonical Pokedex, present in the games and recorded in our API of choice. For our final project for S&DS361, we decided that this wealth of data may be interesting to analyze. In particular, with the rapid rise of Pokemon in popular culture, such analysis may be engaging for statisticians and non-statisticians alike.
+As the franchise has developed, the range of Pokemon available in-game has expanded greatly. As of the current generation of Pokemon games, there are 807 canon Pokemon creatures, each with unique characteristics, which are outlined in a canonical Pokedex, present in the games and recorded in our API of choice. Each Pokemon has a wealth of data associated with each, some of which we outline in the following section. For our final project for S&DS361, we decided that these data may be interesting to analyze. In particular, with the rapid rise of Pokemon in popular culture, such analysis may be engaging for statisticians and non-statisticians alike.
 
 ## The data
 Pokemon have a myriad of characteristics associated with them. Below are the most well-characterized traits, which we decided to focus our analyses on:
@@ -46,7 +46,7 @@ Pokemon have a myriad of characteristics associated with them. Below are the mos
 To obtain these data, we made us of the [PokeAPI](https://pokeapi.co/about.html/), a free-to-use API containing information from all generations of the Pokemon games, complete with wrappers in numerous languages. However, an official R wrapper is not available, and while a wrapper package exists, we made direct API calls to retrieve our data.
 
 # Data acquisition
-The downloading of the data was done through LoadJSON requests from the PokeAPI. We first made a call which listed all the Pokemon in the database, after which we made a separate request for each Pokemon to obtain more detailed information. The JSON files provided by the API were then processed into a DataFrame for subsequent analyses. 
+The downloading of the data was done through LoadJSON requests from the PokeAPI. We first made a call which listed all the Pokemon in the database. Using this list of all Pokemon, we then made a separate request for each Pokemon to obtain more detailed information, receiving data about the various characteristics, such as type, height, weight, growth rate, base experience, base stats, and legendary status. The JSON files provided by the API were then processed and saved into a DataFrame for subsequent analyses. After the completion of this step, the processed dataframe (attached as supplementary data) was imported for all analyses.
 
 # Visualization
 
@@ -139,7 +139,7 @@ plot_by_primary("defense_base","Defense")
 
 ### Proportions of legendary pokemon by type
 
-Using the primary types, we can also take a preliminary look at the proportions of Pokemon within each type that are legendary, giving us a suggestion as to if type could be indicative of legendary status. We indeed see that some types (e.g. steel, dragon, and psychic) have especially high proportions of legendaries, whereas others (bug, grass, and rock) have none or very little.
+Using the primary types, we can also take a preliminary look at the proportions of Pokemon within each type that are legendary, giving us a suggestion as to if type could be indicative of legendary status. We indeed see that some types (e.g. steel, dragon, and psychic) have especially high proportions of legendaries, whereas others (bug, grass, and rock) have none or very little. This is consistent with the Pokemon lore, which often include Pokemon posessing mythical attributes or abilities (dragons, psychic abilities, etc) as legendary Pokemon.
 
 ```{r}
 bymean <- reorder(pokemons_df$type_primary, pokemons_df$is_legendary, mean)
@@ -155,6 +155,7 @@ ggplot(pokemons_df,aes(x = bymean,fill = order)) +
     ylab("Proportion legendary") + 
     theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position = "none")
 ```
+
 
 ## Comparisons of mormal and legendary Pokemon statistics
 
@@ -220,11 +221,13 @@ ggplot(pokemons_df, aes(x = defense_base, y = attack_base))+
   theme_classic() + 
   labs(x="Defense", y = "Attack")
 ```
+From a brief view at this data, it seems that there is some positive relationship between defense and attack (which would be consistent with Pokemon gameplay, where more valuable and powerful Pokemon often have both higher attack and defense).
 
 ```{r}
 corr <- cor(pokemons_df$defense_base, pokemons_df$attack_base)
 corr
 ```
+As expected, there is correlation observed between defense and attack. However, using bootstrap analysis, we can perform hypothesis testing against a null hypothesis where there is no correlation between the two, and perform a more rigorous analysis.
 
 #### Testing significance with bootstrap
 
@@ -245,19 +248,20 @@ abline(v = corr)
 ```{r}
 mean(as.numeric(corr_bs > corr))
 ```
-From this result, we see that there were no bootstrapped samples with a correlation greater than the observed correlation in the null distribution.
+From this result, we see that there were no bootstrapped samples with a correlation greater than the observed correlation in the null distribution, corresponding to a p-value of 0. Thus, we reject the null, and there seems to be a statistically significant correlation between attack and defense.
 
 ### Height and weight
 
 #### Plot
 
+We then consider height and weight. As with attack and defense, we see some positive relationship between the two, though the extent of this relationship is not clear from the plot.  
 ```{r}
 ggplot(pokemons_df, aes(x = log_weight, y = log_height))+
   geom_point() +
   theme_classic() + 
   labs(x="Weight (log10)", y = "Height (log10)")
 ```
-
+Indeed, there is high correlation observed between weight and height.
 ```{r}
 corr <- cor(pokemons_df$log_weight, pokemons_df$log_height)
 corr
@@ -436,3 +440,4 @@ Our logistic regression model seems to be fairly accurate in predicting whether 
 # Conclusion
 Our analysis of the PokeAPI is by no means exhaustive, and there are many other interesting analyses that can be performed. However, we hope that the analyses contained in this project provide some level of insight into the relationships between different Pokemon statistics. In our project, we used various techniques covered in class, beginning with data visualization with ggplot, generating null distributions with bootstrap, principal component analysis, linear regression, and finally logistic regression. 
   It must be noted that these statistics are derived from the Pokemon games, and are thus not truly natural data, in a sense. Game developers chose the various characteristics of each Pokemon, in line with the Pokemon's appearance and lore. Even though these data are artificial, we feel that given Pokemon's popularity in recent years, as well as the plethora of data presented in the PokeAPI databased, such analyses are still worthwhile, and provide an opportunity to use data analysis techniques covered in S&DS 361 on a unique, interesting dataset.
+  Another missed opportunity for more in-depth statistical analysis is the lack of actual samples in the data. Due to the nature of the Pokemon games, there is no variability between individuals of a specific Pokemon species. That is, each Bulbasaur will have the same statistics as the population values. If some variability were introduced in the game, a more realistic analysis could have been performed, using observations of different individuals even in the same Pokemon species. Fixed effects models, as well as other more sophisticated statistical techniques could then have been used. However, we found that even with the somewhat simplified scenario, the dataset still proved interesting to analyze.
